@@ -2,8 +2,8 @@ name: ELYTH Scheduled Post
 
 on:
   schedule:
-    # 12:15 JST every day.
-    - cron: "15 3 * * *"
+    # Hourly patrol. The script decides randomly whether to create a root post.
+    - cron: "7 * * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -15,6 +15,8 @@ jobs:
   post:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,6 +30,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check secrets
+        env:
+          ELYTH_API_KEY: ${{ secrets.ELYTH_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          test -n "$ELYTH_API_KEY" || (echo "ELYTH_API_KEY is missing" && exit 1)
+          test -n "$GEMINI_API_KEY" || (echo "GEMINI_API_KEY is missing" && exit 1)
+
       - name: Act as titibara_monyuyu on ELYTH
         env:
           ELYTH_API_KEY: ${{ secrets.ELYTH_API_KEY }}
@@ -35,7 +45,8 @@ jobs:
           ELYTH_HANDLE: titibara_monyuyu
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3-flash-preview
-          ELYTH_MIN_HOURS_BETWEEN_POSTS: "20"
+          ELYTH_MIN_HOURS_BETWEEN_POSTS: "2"
+          ELYTH_RANDOM_POST_CHANCE: "0.45"
           ELYTH_MAX_REPLIES_PER_RUN: "2"
           ELYTH_MAX_LIKES_PER_RUN: "3"
           ELYTH_MAX_FOLLOWS_PER_RUN: "1"

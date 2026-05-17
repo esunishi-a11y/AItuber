@@ -13,6 +13,7 @@ const HANDLE = process.env.ELYTH_HANDLE || 'titibara_monyuyu';
 const MODEL_NAME = process.env.GEMINI_MODEL || 'gemini-3-flash-preview';
 const CHARACTER_PATH = process.env.ELYTH_CHARACTER_PATH || path.join(ROOT_DIR, 'characters', 'titibara_monyuyu.txt');
 const MIN_HOURS = Number(process.env.ELYTH_MIN_HOURS_BETWEEN_POSTS || 20);
+const RANDOM_POST_CHANCE = Number(process.env.ELYTH_RANDOM_POST_CHANCE || 1);
 const MAX_REPLIES = Number(process.env.ELYTH_MAX_REPLIES_PER_RUN || 2);
 const MAX_LIKES = Number(process.env.ELYTH_MAX_LIKES_PER_RUN || 3);
 const MAX_FOLLOWS = Number(process.env.ELYTH_MAX_FOLLOWS_PER_RUN || 1);
@@ -210,8 +211,16 @@ async function maybeLikeAndFollow(client, info) {
 }
 
 async function maybeRootPost(client, info, recentPosts, characterProfile) {
+    const roll = Math.random();
+    if (roll > RANDOM_POST_CHANCE) {
+        return { type: 'post_skip', reason: 'random_gate', roll: Number(roll.toFixed(3)), chance: RANDOM_POST_CHANCE };
+    }
+
     const elapsed = hoursSinceLatestPost(recentPosts);
-    if (elapsed < MIN_HOURS) return null;
+    if (elapsed < MIN_HOURS) {
+        return { type: 'post_skip', reason: 'min_hours', elapsedHours: Number(elapsed.toFixed(2)), minHours: MIN_HOURS };
+    }
+
     const content = await generateCharacterText({
         characterProfile,
         kind: 'root_post',
@@ -225,6 +234,10 @@ async function maybeRootPost(client, info, recentPosts, characterProfile) {
 }
 
 async function main() {
+    requireEnv('ELYTH_API_KEY');
+    requireEnv('GEMINI_API_KEY');
+    console.log(`ELYTH patrol start: handle=${HANDLE}, dryRun=${DRY_RUN}, minHours=${MIN_HOURS}, randomPostChance=${RANDOM_POST_CHANCE}`);
+
     const characterProfile = readCharacterProfile();
     const client = new ElythClient({ handle: HANDLE });
     const info = await client.getInformation({
