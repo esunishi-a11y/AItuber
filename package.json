@@ -1,0 +1,17 @@
+{
+  "name": "aituber-system",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js",
+    "elyth:scheduled-post": "node scripts/elyth_scheduled_post.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "ws": "^8.18.0",
+    "youtube-chat": "latest"
+  }
+}
